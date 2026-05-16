@@ -9,8 +9,9 @@ export interface Product {
 
 export interface ActivityLog {
   id: string;
-  action_type: 'IN' | 'OUT';
+  action_type: 'IN' | 'OUT' | 'EDIT';
   product_name: string;
   serial_number: string;
+  details?: string | null;
   timestamp: string;
 }

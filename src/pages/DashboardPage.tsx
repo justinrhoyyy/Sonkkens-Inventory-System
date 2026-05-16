@@ -52,17 +52,27 @@ export default function DashboardPage() {
       return;
     }
     setSaving(true);
-    const { error } = await supabase
-      .from('products')
-      .update({ product_name: editName.trim(), serial_number: editSerial.trim() })
-      .eq('id', selected.id);
+    // fetch current product to capture previous values
+    const { data: prevData, error: prevErr } = await supabase.from('products').select('*').eq('id', selected.id).single();
+    if (prevErr || !prevData) {
+      toast('Unable to fetch existing product');
+      setSaving(false);
+      return;
+    }
+
+    const updates = { product_name: editName.trim(), serial_number: editSerial.trim() };
+    const { error } = await supabase.from('products').update(updates).eq('id', selected.id);
 
     if (error) {
       toast('Unable to update product');
     } else {
+      // record edit in activity_logs with details
+      const details = JSON.stringify({ before: { product_name: prevData.product_name, serial_number: prevData.serial_number }, after: { product_name: updates.product_name, serial_number: updates.serial_number } });
+      await supabase.from('activity_logs').insert({ action_type: 'EDIT', product_name: updates.product_name, serial_number: updates.serial_number, details });
+
       toast('Product updated');
       fetchProducts();
-      setSelected({ ...selected, product_name: editName.trim(), serial_number: editSerial.trim() });
+      setSelected({ ...selected, product_name: updates.product_name, serial_number: updates.serial_number });
       setEditMode(false);
     }
     setSaving(false);

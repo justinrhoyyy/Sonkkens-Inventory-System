@@ -11,8 +11,9 @@ create table if not exists products (
 
 create table if not exists activity_logs (
   id uuid not null primary key default uuid_generate_v4(),
-  action_type text not null check (action_type in ('IN', 'OUT')),
+  action_type text not null check (action_type in ('IN', 'OUT', 'EDIT')),
   product_name text not null,
   serial_number text not null,
+  details text,
   timestamp timestamp with time zone not null default now()
 );

@@ -180,10 +180,9 @@ export default function InOutPage() {
   const previewCard = useMemo(() => {
     if (!barcodeResult) return null;
     return (
-      <div className="product-preview" id="barcode-card">
-        <h3 style={{ margin: '0 0 8px' }}>{name || 'Product added'}</h3>
-        <div className="text-muted">{serial || 'Serial number'}</div>
-        <img src={barcodeResult} alt="Generated barcode" style={{ marginTop: 18 }} />
+      <div className="product-preview">
+        <h3 style={{ margin: '0 0 8px' }}>Product added</h3>
+        <img id="barcode-card" src={barcodeResult} alt="Generated barcode" style={{ marginTop: 18 }} />
       </div>
     );
   }, [barcodeResult, name, serial]);

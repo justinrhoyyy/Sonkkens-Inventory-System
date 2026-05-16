@@ -136,7 +136,7 @@ export default function DashboardPage() {
           {!selected && <p className="text-muted">Choose a product to view full barcode details.</p>}
 
           {selected && (
-            <div id="detail-download" className="product-preview">
+            <div className="product-preview">
               <div style={{ display: 'grid', gap: 14 }}>
                 <div>
                   <div className="text-muted">Product name</div>
@@ -150,7 +150,7 @@ export default function DashboardPage() {
                   <div className="text-muted">Barcode</div>
                   <div>{selected.barcode_number}</div>
                 </div>
-                <img src={selected.barcode_image} alt="Barcode" />
+                <img id="detail-download" src={selected.barcode_image} alt="Barcode" />
               </div>
             </div>
           )}

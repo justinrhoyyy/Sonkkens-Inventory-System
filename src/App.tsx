@@ -13,7 +13,12 @@ import { toast } from './components/Toast';
 function App() {
   const [session, setSession] = useState<any>(null);
   const [loadingSession, setLoadingSession] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     async function loadSession() {
@@ -47,7 +52,7 @@ function App() {
 
   return (
     <div className="app-shell">
-      {session && <Sidebar onLogout={handleLogout} />}
+      {session && <Sidebar onLogout={handleLogout} open={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />}
       <main className={session ? 'page-shell with-sidebar' : 'page-shell'}>
         <Routes>
           <Route path="/login" element={<LoginPage session={session} />} />

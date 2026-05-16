@@ -2,6 +2,8 @@ import { NavLink } from 'react-router-dom';
 
 interface SidebarProps {
   onLogout: () => void;
+  open?: boolean;
+  onToggle?: () => void;
 }
 
 const links = [
@@ -11,9 +13,16 @@ const links = [
   { path: '/profile', label: 'View Profile' },
 ];
 
-export default function Sidebar({ onLogout }: SidebarProps) {
+export default function Sidebar({ onLogout, open = false, onToggle }: SidebarProps) {
   return (
-    <aside className="sidebar">
+    <>
+      <button className="sidebar-toggle" onClick={onToggle} aria-label="Toggle sidebar">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      {open && <div className="sidebar-overlay" onClick={onToggle}></div>}
+      <aside className={`sidebar ${open ? 'open' : ''}`}>
       <div className="brand">
         <div className="brand-icon">S</div>
         <div>
@@ -37,6 +46,7 @@ export default function Sidebar({ onLogout }: SidebarProps) {
       <button className="button secondary" style={{ marginTop: 'auto' }} onClick={onLogout}>
         Logout
       </button>
-    </aside>
+      </aside>
+    </>
   );
 }

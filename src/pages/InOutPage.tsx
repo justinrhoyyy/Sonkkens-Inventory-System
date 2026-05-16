@@ -6,8 +6,22 @@ import { Product } from '../types';
 import Modal from '../components/Modal';
 import { toast } from '../components/Toast';
 
-function makeRandomBarcode() {
+function makeRandomBarcodeBase() {
   return Math.floor(100000000000 + Math.random() * 900000000000).toString();
+}
+
+function calculateEan13CheckDigit(code: string) {
+  const digits = code.split('').map(Number);
+  const sum = digits.reduce((total, digit, index) => {
+    return total + digit * (index % 2 === 0 ? 1 : 3);
+  }, 0);
+  const remainder = sum % 10;
+  return remainder === 0 ? '0' : String(10 - remainder);
+}
+
+function makeEan13Barcode() {
+  const base = makeRandomBarcodeBase();
+  return base + calculateEan13CheckDigit(base);
 }
 
 async function createBarcodeImage(barcode: string, productName: string, serial: string) {
@@ -83,12 +97,12 @@ export default function InOutPage() {
   }
 
   async function generateUniqueBarcode() {
-    let candidate = makeRandomBarcode();
+    let candidate = makeEan13Barcode();
     let attempt = 0;
     while (attempt < 10) {
       const { data } = await supabase.from('products').select('id').eq('barcode_number', candidate).single();
       if (!data) return candidate;
-      candidate = makeRandomBarcode();
+      candidate = makeEan13Barcode();
       attempt += 1;
     }
     return candidate;

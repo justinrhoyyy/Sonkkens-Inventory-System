@@ -8,6 +8,11 @@ const filters: Array<'ALL' | 'IN' | 'OUT' | 'EDIT'> = ['ALL', 'IN', 'OUT', 'EDIT
 export default function ActivityLogPage() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [filter, setFilter] = useState<'ALL' | 'IN' | 'OUT' | 'EDIT'>('ALL');
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
+  const [editAccountName, setEditAccountName] = useState('');
+  const [editSi, setEditSi] = useState('');
+  const [editDr, setEditDr] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
     fetchLogs();
@@ -60,7 +65,20 @@ export default function ActivityLogPage() {
                         try {
                           const d = JSON.parse(log.details as string);
                           if (d.before && d.after) {
-                            return `Name: ${d.before.product_name} → ${d.after.product_name}; Serial: ${d.before.serial_number} → ${d.after.serial_number}`;
+                            const changes = [
+                              `Name: ${d.before.product_name} → ${d.after.product_name}`,
+                              `Serial: ${d.before.serial_number} → ${d.after.serial_number}`,
+                            ];
+                            if (d.before.delivery_date !== d.after.delivery_date) {
+                              changes.push(`Delivery date: ${d.before.delivery_date || 'N/A'} → ${d.after.delivery_date || 'N/A'}`);
+                            }
+                            return changes.join('; ');
+                          }
+                          if (d.delivery_date) {
+                            return `Delivery date: ${d.delivery_date}`;
+                          }
+                          if (d.account_name || d.si || d.dr) {
+                            return `Account: ${d.account_name}; SI: ${d.si}; DR: ${d.dr}`;
                           }
                           return String(log.details);
                         } catch (e) {

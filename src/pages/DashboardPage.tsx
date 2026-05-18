@@ -11,6 +11,7 @@ export default function DashboardPage() {
   const [editMode, setEditMode] = useState(false);
   const [editName, setEditName] = useState('');
   const [editSerial, setEditSerial] = useState('');
+  const [editDeliveryDate, setEditDeliveryDate] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -21,6 +22,7 @@ export default function DashboardPage() {
     if (selected) {
       setEditName(selected.product_name);
       setEditSerial(selected.serial_number);
+      setEditDeliveryDate(selected.delivery_date ?? '');
     }
   }, [selected]);
 
@@ -47,8 +49,8 @@ export default function DashboardPage() {
 
   const handleSave = async () => {
     if (!selected) return;
-    if (!editName.trim() || !editSerial.trim()) {
-      toast('Product name and serial number are required');
+    if (!editName.trim() || !editSerial.trim() || !editDeliveryDate) {
+      toast('Product name, serial number, and delivery date are required');
       return;
     }
     setSaving(true);
@@ -60,19 +62,38 @@ export default function DashboardPage() {
       return;
     }
 
-    const updates = { product_name: editName.trim(), serial_number: editSerial.trim() };
+    const updates = {
+      product_name: editName.trim(),
+      serial_number: editSerial.trim(),
+      delivery_date: editDeliveryDate,
+    };
     const { error } = await supabase.from('products').update(updates).eq('id', selected.id);
 
     if (error) {
       toast('Unable to update product');
     } else {
-      // record edit in activity_logs with details
-      const details = JSON.stringify({ before: { product_name: prevData.product_name, serial_number: prevData.serial_number }, after: { product_name: updates.product_name, serial_number: updates.serial_number } });
-      await supabase.from('activity_logs').insert({ action_type: 'EDIT', product_name: updates.product_name, serial_number: updates.serial_number, details });
+      const details = JSON.stringify({
+        before: {
+          product_name: prevData.product_name,
+          serial_number: prevData.serial_number,
+          delivery_date: prevData.delivery_date,
+        },
+        after: {
+          product_name: updates.product_name,
+          serial_number: updates.serial_number,
+          delivery_date: updates.delivery_date,
+        },
+      });
+      await supabase.from('activity_logs').insert({
+        action_type: 'EDIT',
+        product_name: updates.product_name,
+        serial_number: updates.serial_number,
+        details,
+      });
 
       toast('Product updated');
       fetchProducts();
-      setSelected({ ...selected, product_name: updates.product_name, serial_number: updates.serial_number });
+      setSelected({ ...selected, product_name: updates.product_name, serial_number: updates.serial_number, delivery_date: updates.delivery_date });
       setEditMode(false);
     }
     setSaving(false);
@@ -157,6 +178,10 @@ export default function DashboardPage() {
                   <div>{selected.serial_number}</div>
                 </div>
                 <div>
+                  <div className="text-muted">Delivery date</div>
+                  <div>{selected.delivery_date || 'N/A'}</div>
+                </div>
+                <div>
                   <div className="text-muted">Barcode</div>
                   <div>{selected.barcode_number}</div>
                 </div>
@@ -181,6 +206,10 @@ export default function DashboardPage() {
               <div className="input-group">
                 <label className="label">Serial number</label>
                 <input value={editSerial} onChange={(e) => setEditSerial(e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="label">Delivery date</label>
+                <input type="date" value={editDeliveryDate} onChange={(e) => setEditDeliveryDate(e.target.value)} />
               </div>
               <button className="button" onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</button>
             </div>

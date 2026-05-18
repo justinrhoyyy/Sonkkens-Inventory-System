@@ -6,8 +6,8 @@ A minimalist inventory management app built with React, Vite, and Supabase.
 
 - Supabase Auth protected login
 - Dashboard with product search and details
-- IN product creation with automatic barcode generation
-- OUT product removal with confirmation and activity logging
+- IN product creation with delivery date, barcode generation, and activity logging
+- OUT product removal with required Account Name, SI, DR, and editable activity details
 - Profile updates for email, password, and display name
 - Download product details as image
 
@@ -66,8 +66,8 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 
 ## Database Schema
 
-- `products`
-- `activity_logs`
+- `products` (includes `delivery_date` for IN products)
+- `activity_logs` (stores IN delivery metadata and OUT removal details in `details`)
 
 ## Notes
 

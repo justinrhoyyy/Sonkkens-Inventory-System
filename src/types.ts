@@ -4,6 +4,7 @@ export interface Product {
   serial_number: string;
   barcode_number: string;
   barcode_image: string;
+  delivery_date: string | null;
   created_at: string;
 }
 

@@ -65,6 +65,7 @@ async function createBarcodeImage(barcode: string, productName: string, serial: 
 export default function InOutPage() {
   const [name, setName] = useState('');
   const [serial, setSerial] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState('');
   const [barcodeResult, setBarcodeResult] = useState<string | null>(null);
   const [barcodeValue, setBarcodeValue] = useState('');
   const [foundProduct, setFoundProduct] = useState<Product | null>(null);
@@ -73,6 +74,9 @@ export default function InOutPage() {
   const [savingIn, setSavingIn] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [outSearch, setOutSearch] = useState('');
+  const [accountName, setAccountName] = useState('');
+  const [siNumber, setSiNumber] = useState('');
+  const [drNumber, setDrNumber] = useState('');
 
   useEffect(() => {
     fetchProducts();
@@ -110,8 +114,8 @@ export default function InOutPage() {
 
   const handleAddProduct = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!name.trim() || !serial.trim()) {
-      toast('Product name and serial number are required');
+    if (!name.trim() || !serial.trim() || !deliveryDate) {
+      toast('Product name, serial number, and delivery date are required');
       return;
     }
     setSavingIn(true);
@@ -123,21 +127,25 @@ export default function InOutPage() {
         serial_number: serial.trim(),
         barcode_number: barcodeNumber,
         barcode_image: barcodeImage,
+        delivery_date: deliveryDate,
       });
-      await supabase.from('activity_logs').insert({
-        action_type: 'IN',
-        product_name: name.trim(),
-        serial_number: serial.trim(),
-      });
-      if (error) {
-        toast('Unable to add product');
-      } else {
+      if (!error) {
+        await supabase.from('activity_logs').insert({
+          action_type: 'IN',
+          product_name: name.trim(),
+          serial_number: serial.trim(),
+          details: JSON.stringify({ delivery_date: deliveryDate }),
+        });
         setBarcodeResult(barcodeImage);
         setBarcodeValue(barcodeNumber);
         toast('Product added successfully');
         setName('');
         setSerial('');
+        setDeliveryDate('');
         fetchProducts();
+      } else {
+        console.error('Add product error:', error);
+        toast(`Unable to add product: ${error.message}`);
       }
     } catch (err) {
       toast('Could not generate barcode image');
@@ -147,19 +155,30 @@ export default function InOutPage() {
 
   const handleDelete = async () => {
     if (!foundProduct) return;
+    if (!accountName.trim() || !siNumber.trim() || !drNumber.trim()) {
+      toast('Account Name, SI, and DR are required');
+      return;
+    }
     setLoadingOut(true);
     const { error } = await supabase.from('products').delete().eq('id', foundProduct.id);
-    await supabase.from('activity_logs').insert({
-      action_type: 'OUT',
-      product_name: foundProduct.product_name,
-      serial_number: foundProduct.serial_number,
-    });
+    if (!error) {
+      await supabase.from('activity_logs').insert({
+        action_type: 'OUT',
+        product_name: foundProduct.product_name,
+        serial_number: foundProduct.serial_number,
+        details: JSON.stringify({ account_name: accountName.trim(), si: siNumber.trim(), dr: drNumber.trim() }),
+      });
+    }
     if (error) {
-      toast('Unable to remove product');
+      console.error('Remove product error:', error);
+      toast(`Unable to remove product: ${error.message}`);
     } else {
       toast('Product removed from inventory');
       setFoundProduct(null);
       setOutSearch('');
+      setAccountName('');
+      setSiNumber('');
+      setDrNumber('');
       fetchProducts();
     }
     setConfirmOpen(false);
@@ -202,6 +221,10 @@ export default function InOutPage() {
               <label className="label">Serial number</label>
               <input value={serial} onChange={(e) => setSerial(e.target.value)} placeholder="Enter serial number" />
             </div>
+            <div className="input-group">
+              <label className="label">Delivery date</label>
+              <input type="date" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />
+            </div>
             <button className="button" type="submit" disabled={savingIn}>{savingIn ? 'Adding…' : 'Add product'}</button>
           </form>
 
@@ -226,7 +249,26 @@ export default function InOutPage() {
               <div style={{ fontWeight: 700 }}>{foundProduct.product_name}</div>
               <div className="text-muted">Serial: {foundProduct.serial_number}</div>
               <div className="text-muted">Barcode: {foundProduct.barcode_number}</div>
-              <button className="button" style={{ marginTop: 16 }} onClick={() => setConfirmOpen(true)}>Remove product</button>
+              <div className="input-group" style={{ marginTop: 16 }}>
+                <label className="label">Account Name</label>
+                <input value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="Enter account name" />
+              </div>
+              <div className="input-group">
+                <label className="label">SI</label>
+                <input value={siNumber} onChange={(e) => setSiNumber(e.target.value)} placeholder="Enter SI number" />
+              </div>
+              <div className="input-group">
+                <label className="label">DR</label>
+                <input value={drNumber} onChange={(e) => setDrNumber(e.target.value)} placeholder="Enter DR number" />
+              </div>
+              <button
+                className="button"
+                style={{ marginTop: 16 }}
+                onClick={() => setConfirmOpen(true)}
+                disabled={!accountName.trim() || !siNumber.trim() || !drNumber.trim()}
+              >
+                Remove product
+              </button>
             </div>
           ) : (
             outSearch.trim() && <p className="text-muted" style={{ marginTop: 18 }}>No product found for this barcode.</p>

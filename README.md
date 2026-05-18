@@ -4,12 +4,23 @@ A minimalist inventory management app built with React, Vite, and Supabase.
 
 ## Features
 
-- Supabase Auth protected login
-- Dashboard with product search and details
-- IN product creation with delivery date, barcode generation, and activity logging
-- OUT product removal with required Account Name, SI, DR, and editable activity details
-- Profile updates for email, password, and display name
-- Download product details as image
+- Supabase Auth protected login and single user inventory control
+- Dashboard with searchable product inventory and detailed product preview
+- IN product creation with delivery date, automatic barcode generation, and activity logging
+- OUT product removal with required Account Name, SI, DR, removal confirmation, and editable activity details
+- Activity log with filtering by action type and readable detail summaries
+- Dashboard edit support for product details, including delivery date updates
+- Profile management for email, password, and display name
+- Download product details and barcode as an image
+
+## Tech Stack
+
+- TypeScript
+- React
+- Vite
+- Supabase (Auth + Database)
+- HTML
+- CSS
 
 ## Requirements
 

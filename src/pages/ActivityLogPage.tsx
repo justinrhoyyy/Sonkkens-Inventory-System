@@ -3,40 +3,112 @@ import { supabase } from '../lib/supabaseClient';
 import { ActivityLog } from '../types';
 import { toast } from '../components/Toast';
 
-const filters: Array<'ALL' | 'IN' | 'OUT' | 'EDIT'> = ['ALL', 'IN', 'OUT', 'EDIT'];
+const filters: Array<'ALL' | 'IN' | 'OUT' | 'EDIT'> = [
+  'ALL',
+  'IN',
+  'OUT',
+  'EDIT',
+];
+
+function SkeletonRow() {
+  return (
+    <tr>
+      {[1, 2, 3, 4, 5].map((item) => (
+        <td key={item}>
+          <div
+            style={{
+              height: 16,
+              width: '100%',
+              borderRadius: 6,
+              background: '#e2e8f0',
+              animation: 'pulse 1.5s infinite',
+            }}
+          />
+        </td>
+      ))}
+    </tr>
+  );
+}
 
 export default function ActivityLogPage() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
-  const [filter, setFilter] = useState<'ALL' | 'IN' | 'OUT' | 'EDIT'>('ALL');
-  const [editingLogId, setEditingLogId] = useState<string | null>(null);
-  const [editAccountName, setEditAccountName] = useState('');
+
+  const [loading, setLoading] = useState(true);
+
+  const [filter, setFilter] = useState<
+    'ALL' | 'IN' | 'OUT' | 'EDIT'
+  >('ALL');
+
+  const [editingLogId, setEditingLogId] =
+    useState<string | null>(null);
+
+  const [editAccountName, setEditAccountName] =
+    useState('');
+
   const [editSi, setEditSi] = useState('');
+
   const [editDr, setEditDr] = useState('');
-  const [savingEdit, setSavingEdit] = useState(false);
+
+  const [savingEdit, setSavingEdit] =
+    useState(false);
 
   useEffect(() => {
     fetchLogs();
   }, []);
 
   async function fetchLogs() {
-    const { data, error } = await supabase.from('activity_logs').select('*').order('timestamp', { ascending: false });
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from('activity_logs')
+      .select('*')
+      .order('timestamp', {
+        ascending: false,
+      });
+
     if (error) {
       toast('Unable to load activity log');
+      setLoading(false);
       return;
     }
+
     setLogs(data ?? []);
+    setLoading(false);
   }
 
   const visibleLogs =
-    filter === 'ALL' ? logs : logs.filter((entry) => entry.action_type === filter);
+    filter === 'ALL'
+      ? logs
+      : logs.filter(
+          (entry) =>
+            entry.action_type === filter
+        );
 
   return (
     <div className="page-shell">
-      <h1 className="page-title">Activity Log</h1>
+      <h1 className="page-title">
+        Activity Log
+      </h1>
+
       <div className="card">
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 12,
+            flexWrap: 'wrap',
+            marginBottom: 18,
+          }}
+        >
           {filters.map((value) => (
-            <button key={value} className={`button ${filter === value ? '' : 'secondary'}`} onClick={() => setFilter(value)}>
+            <button
+              key={value}
+              className={`button ${
+                filter === value
+                  ? ''
+                  : 'secondary'
+              }`}
+              onClick={() => setFilter(value)}
+            >
               {value}
             </button>
           ))}
@@ -45,54 +117,125 @@ export default function ActivityLogPage() {
         <div style={{ overflowX: 'auto' }}>
           <table className="table">
             <thead>
-                <tr>
-                  <th>Action</th>
-                  <th>Product</th>
-                  <th>Serial</th>
-                  <th>Details</th>
-                  <th>Timestamp</th>
-                </tr>
+              <tr>
+                <th>Action</th>
+                <th>Product</th>
+                <th>Serial</th>
+                <th>Details</th>
+                <th>Timestamp</th>
+              </tr>
             </thead>
+
             <tbody>
-                {visibleLogs.map((log) => (
+              {loading ? (
+                <>
+                  <SkeletonRow />
+                  <SkeletonRow />
+                  <SkeletonRow />
+                  <SkeletonRow />
+                  <SkeletonRow />
+                </>
+              ) : visibleLogs.length > 0 ? (
+                visibleLogs.map((log) => (
                   <tr key={log.id}>
                     <td>{log.action_type}</td>
+
                     <td>{log.product_name}</td>
+
                     <td>{log.serial_number}</td>
-                    <td style={{ maxWidth: 360, whiteSpace: 'normal' }}>
+
+                    <td
+                      style={{
+                        maxWidth: 360,
+                        whiteSpace: 'normal',
+                      }}
+                    >
                       {(() => {
-                        if (!log.details) return '';
+                        if (!log.details)
+                          return '';
+
                         try {
-                          const d = JSON.parse(log.details as string);
-                          if (d.before && d.after) {
+                          const d = JSON.parse(
+                            log.details as string
+                          );
+
+                          if (
+                            d.before &&
+                            d.after
+                          ) {
                             const changes = [
                               `Name: ${d.before.product_name} → ${d.after.product_name}`,
                               `Serial: ${d.before.serial_number} → ${d.after.serial_number}`,
                             ];
-                            if (d.before.delivery_date !== d.after.delivery_date) {
-                              changes.push(`Delivery date: ${d.before.delivery_date || 'N/A'} → ${d.after.delivery_date || 'N/A'}`);
+
+                            if (
+                              d.before
+                                .delivery_date !==
+                              d.after
+                                .delivery_date
+                            ) {
+                              changes.push(
+                                `Delivery date: ${
+                                  d.before
+                                    .delivery_date ||
+                                  'N/A'
+                                } → ${
+                                  d.after
+                                    .delivery_date ||
+                                  'N/A'
+                                }`
+                              );
                             }
-                            return changes.join('; ');
+
+                            return changes.join(
+                              '; '
+                            );
                           }
-                          if (d.delivery_date) {
+
+                          if (
+                            d.delivery_date
+                          ) {
                             return `Delivery date: ${d.delivery_date}`;
                           }
-                          if (d.account_name || d.si || d.dr) {
+
+                          if (
+                            d.account_name ||
+                            d.si ||
+                            d.dr
+                          ) {
                             return `Account: ${d.account_name}; SI: ${d.si}; DR: ${d.dr}`;
                           }
-                          return String(log.details);
+
+                          return String(
+                            log.details
+                          );
                         } catch (e) {
-                          return String(log.details);
+                          return String(
+                            log.details
+                          );
                         }
                       })()}
                     </td>
-                    <td>{new Date(log.timestamp).toLocaleString()}</td>
+
+                    <td>
+                      {new Date(
+                        log.timestamp
+                      ).toLocaleString()}
+                    </td>
                   </tr>
-                ))}
-              {visibleLogs.length === 0 && (
-                  <tr>
-                    <td colSpan={5} style={{ padding: 20, color: '#64748b' }}>No log entries to show.</td>
-                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={5}
+                    style={{
+                      padding: 20,
+                      color: '#64748b',
+                    }}
+                  >
+                    No log entries to show.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>

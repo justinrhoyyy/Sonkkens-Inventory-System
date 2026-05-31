@@ -44,6 +44,7 @@ export default function Sidebar({
   onToggle,
 }: SidebarProps) {
   const location = useLocation();
+
   const navRef = useRef<HTMLUListElement | null>(null);
   const indicatorRef = useRef<HTMLDivElement | null>(null);
 
@@ -53,26 +54,26 @@ export default function Sidebar({
     const items = navRef.current.querySelectorAll("li");
 
     const activeIndex = links.findIndex(
-      (l) => location.pathname === l.path
+      (link) => link.path === location.pathname
     );
 
-    const el = items[activeIndex] as HTMLElement;
-    if (!el) return;
+    const activeItem = items[activeIndex] as HTMLElement;
 
-    const rect = el.getBoundingClientRect();
+    if (!activeItem) return;
 
     gsap.to(indicatorRef.current, {
-      y: el.offsetTop,
-      height: rect.height,
-      duration: 0.5,
+      y: activeItem.offsetTop,
+      height: activeItem.offsetHeight,
+      duration: 0.45,
       ease: "power3.out",
     });
 
-    items.forEach((li, i) => {
-      const link = li.querySelector(".nav-link") as HTMLElement;
+    items.forEach((item, index) => {
+      const link = item.querySelector(".nav-link") as HTMLElement;
+
       if (!link) return;
 
-      const isActive = i === activeIndex;
+      const isActive = index === activeIndex;
 
       gsap.to(link, {
         scale: isActive ? 1 : 0.98,
@@ -84,17 +85,23 @@ export default function Sidebar({
     });
   }, [location.pathname]);
 
+  const handleNavClick = () => {
+    if (window.innerWidth <= 980) {
+      onToggle?.();
+    }
+  };
+
   return (
     <>
-      {/* Toggle Button */}
+      {/* Mobile Hamburger */}
       <button
-        className="sidebar-toggle"
+        className={`sidebar-toggle ${open ? "active" : ""}`}
         onClick={onToggle}
         aria-label="Toggle sidebar"
       >
-        <span></span>
-        <span></span>
-        <span></span>
+        <span />
+        <span />
+        <span />
       </button>
 
       {/* Overlay */}
@@ -105,6 +112,7 @@ export default function Sidebar({
         />
       )}
 
+      {/* Sidebar */}
       <aside className={`sidebar ${open ? "open" : ""}`}>
         {/* Brand */}
         <div className="brand">
@@ -134,8 +142,8 @@ export default function Sidebar({
           />
 
           <ul
-            className="nav-list"
             ref={navRef}
+            className="nav-list"
           >
             {links.map((item) => {
               const Icon = item.icon;
@@ -145,6 +153,7 @@ export default function Sidebar({
                   <NavLink
                     to={item.path}
                     end
+                    onClick={handleNavClick}
                     className={({ isActive }) =>
                       isActive
                         ? "nav-link active"

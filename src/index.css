@@ -734,3 +734,44 @@ textarea:focus {
     padding: 10px 8px;
   }
 }
+.nav-link {
+  position: relative;
+  z-index: 2;
+
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  min-height: 50px;
+  padding: 14px 18px;
+
+  border-radius: 14px;
+
+  color: #334155;
+  font-size: 0.97rem;
+  font-weight: 500;
+
+  transition:
+    color 0.2s ease,
+    transform 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.nav-link svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.nav-link span {
+  flex: 1;
+}
+
+.nav-link:hover {
+  color: var(--primary);
+}
+
+.nav-link.active {
+  color: #0f172a;
+  font-weight: 700;
+}

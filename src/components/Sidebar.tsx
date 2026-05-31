@@ -1,6 +1,13 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
+import {
+  HiHome,
+  HiArrowPath,
+  HiClipboardDocumentList,
+  HiUser,
+  HiArrowRightOnRectangle,
+} from "react-icons/hi2";
 
 interface SidebarProps {
   onLogout: () => void;
@@ -9,10 +16,26 @@ interface SidebarProps {
 }
 
 const links = [
-  { path: "/", label: "Dashboard" },
-  { path: "/in-out", label: "IN/OUT" },
-  { path: "/activity", label: "Activity Log" },
-  { path: "/profile", label: "View Profile" },
+  {
+    path: "/",
+    label: "Dashboard",
+    icon: HiHome,
+  },
+  {
+    path: "/in-out",
+    label: "IN/OUT",
+    icon: HiArrowPath,
+  },
+  {
+    path: "/activity",
+    label: "Activity Log",
+    icon: HiClipboardDocumentList,
+  },
+  {
+    path: "/profile",
+    label: "View Profile",
+    icon: HiUser,
+  },
 ];
 
 export default function Sidebar({
@@ -24,14 +47,13 @@ export default function Sidebar({
   const navRef = useRef<HTMLUListElement | null>(null);
   const indicatorRef = useRef<HTMLDivElement | null>(null);
 
-  /* ---------------- MOVE ACTIVE INDICATOR + DEPTH EFFECT ---------------- */
   useEffect(() => {
     if (!navRef.current || !indicatorRef.current) return;
 
     const items = navRef.current.querySelectorAll("li");
 
-    const activeIndex = links.findIndex((l) =>
-      location.pathname === l.path
+    const activeIndex = links.findIndex(
+      (l) => location.pathname === l.path
     );
 
     const el = items[activeIndex] as HTMLElement;
@@ -39,7 +61,6 @@ export default function Sidebar({
 
     const rect = el.getBoundingClientRect();
 
-    // Move indicator (active pill)
     gsap.to(indicatorRef.current, {
       y: el.offsetTop,
       height: rect.height,
@@ -47,7 +68,6 @@ export default function Sidebar({
       ease: "power3.out",
     });
 
-    // Depth effect for items
     items.forEach((li, i) => {
       const link = li.querySelector(".nav-link") as HTMLElement;
       if (!link) return;
@@ -66,7 +86,7 @@ export default function Sidebar({
 
   return (
     <>
-      {/* toggle button */}
+      {/* Toggle Button */}
       <button
         className="sidebar-toggle"
         onClick={onToggle}
@@ -77,49 +97,83 @@ export default function Sidebar({
         <span></span>
       </button>
 
-      {/* overlay */}
-      {open && <div className="sidebar-overlay" onClick={onToggle} />}
+      {/* Overlay */}
+      {open && (
+        <div
+          className="sidebar-overlay"
+          onClick={onToggle}
+        />
+      )}
 
       <aside className={`sidebar ${open ? "open" : ""}`}>
-        {/* brand */}
+        {/* Brand */}
         <div className="brand">
           <div className="brand-icon">S</div>
+
           <div>
-            <div style={{ fontWeight: 700 }}>Sonkkens</div>
-            <div style={{ fontSize: "0.88rem", color: "#64748b" }}>
+            <div style={{ fontWeight: 700 }}>
+              Sonkkens
+            </div>
+
+            <div
+              style={{
+                fontSize: "0.88rem",
+                color: "#64748b",
+              }}
+            >
               Inventory
             </div>
           </div>
         </div>
 
-        {/* NAV */}
+        {/* Navigation */}
         <nav className="nav-wrapper">
-          <div ref={indicatorRef} className="active-indicator" />
+          <div
+            ref={indicatorRef}
+            className="active-indicator"
+          />
 
-          <ul className="nav-list" ref={navRef}>
-            {links.map((item) => (
-              <li key={item.path}>
-                <NavLink
-                  className={({ isActive }) =>
-                    isActive ? "nav-link active" : "nav-link"
-                  }
-                  to={item.path}
-                  end
-                >
-                  {item.label}
-                </NavLink>
-              </li>
-            ))}
+          <ul
+            className="nav-list"
+            ref={navRef}
+          >
+            {links.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <li key={item.path}>
+                  <NavLink
+                    to={item.path}
+                    end
+                    className={({ isActive }) =>
+                      isActive
+                        ? "nav-link active"
+                        : "nav-link"
+                    }
+                  >
+                    <Icon size={20} />
+                    <span>{item.label}</span>
+                  </NavLink>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 
-        {/* logout */}
+        {/* Logout */}
         <button
           className="button secondary"
-          style={{ marginTop: "auto" }}
+          style={{
+            marginTop: "auto",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "10px",
+          }}
           onClick={onLogout}
         >
-          Logout
+          <HiArrowRightOnRectangle size={20} />
+          <span>Logout</span>
         </button>
       </aside>
     </>

@@ -430,6 +430,7 @@ textarea:focus {
   color: var(--text-muted);
   padding: 14px 16px;
   border-bottom: 1px solid var(--border-soft);
+  white-space: nowrap;
 }
 
 .table tbody td {
@@ -438,6 +439,7 @@ textarea:focus {
   color: var(--text);
   font-size: 0.92rem;
   vertical-align: middle;
+  white-space: nowrap;
 }
 
 /* Row Animation Mechanics */
@@ -465,6 +467,7 @@ textarea:focus {
   font-size: 0.9rem;
   color: #334155;
   max-width: 360px;
+  white-space: normal; /* allow wrapping in detail/description cells */
 }
 
 /* =========================================================
@@ -555,6 +558,13 @@ textarea:focus {
 }
 
 /* =========================================================
+   FAB NAVIGATION — hidden on desktop
+========================================================= */
+.fab-nav {
+  display: none;
+}
+
+/* =========================================================
    RESPONSIVE DESIGN BREAKPOINTS
 ========================================================= */
 
@@ -574,65 +584,125 @@ textarea:focus {
   }
 
   .four-columns {
+    display: grid;
     grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
   }
 
-  /* Transform vertical sidebar into a touch-friendly bottom navigator bar */
+  /* Hide the desktop sidebar on mobile */
   .sidebar {
+    display: none;
+  }
+
+  /* Show FAB nav on mobile */
+  .fab-nav {
+    display: block;
     position: fixed;
-    inset: auto 0 0 0;
-    top: auto;
-    width: 100%;
-    height: 72px;
-    padding: 0 12px;
-    flex-direction: row;
-    justify-content: space-around;
-    align-items: center;
-    gap: 0;
-    border-right: none;
-    border-top: 1px solid var(--border-soft);
-    box-shadow: 0 -6px 24px rgba(37, 99, 235, 0.08);
-    backdrop-filter: blur(20px);
+    bottom: 24px;
+    right: 20px;
     z-index: 1000;
   }
 
-  .sidebar .brand {
-    display: none; /* Strip brand header out on mobile viewport to maximize row layout */
-  }
-
-  .sidebar .nav-wrapper,
-  .sidebar .nav-list {
-    width: 100%;
-    flex-direction: row;
-    justify-content: space-around;
-    margin: 0;
-    gap: 4px;
-  }
-
-  .sidebar .nav-link {
-    flex-direction: column;
+  /* FAB main trigger button */
+  .fab-main {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4f7cff, #79a3ff);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 6px 12px;
-    min-height: 56px;
-    font-size: 0.75rem;
-  }
-  
-  .sidebar .active-indicator {
-    display: none; /* Disable desktop sliding block capsule */
-  }
-  
-  .sidebar .nav-link.active {
-    background: var(--primary-soft);
-    color: var(--primary);
+    font-size: 22px;
+    color: white;
+    box-shadow: 0 8px 28px rgba(79, 124, 255, 0.40);
+    transition:
+      transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+      background 0.3s ease;
+    position: relative;
+    z-index: 2;
   }
 
-  /* Push up content padding so bottom nav bar doesn't overlay bottom data components */
+  .fab-main.open {
+    background: linear-gradient(135deg, #334155, #475569);
+    transform: rotate(45deg);
+  }
+
+  /* Radial items container */
+  .fab-items {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    pointer-events: none;
+  }
+
+  /* Individual radial item */
+  .fab-item {
+    position: absolute;
+    bottom: 7px;
+    right: 7px;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: var(--primary);
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(79, 124, 255, 0.18);
+    transform: scale(0);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.25s ease;
+  }
+
+  .fab-item.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /*
+    Radial positions — spread in a quarter-circle arc (up → left).
+    Adjust these translate values to reposition individual items.
+    Format: translate(X, Y) — negative Y = up, negative X = left
+  */
+  .fab-item:nth-child(1).show { transform: translate(7px,  -72px) scale(1); } /* up        */
+  .fab-item:nth-child(2).show { transform: translate(-44px, -58px) scale(1); } /* up-left   */
+  .fab-item:nth-child(3).show { transform: translate(-72px,  7px)  scale(1); } /* left      */
+  .fab-item:nth-child(4).show { transform: translate(-58px,  58px) scale(1); } /* down-left */
+
+  /* Backdrop dimmer — shown when FAB is open */
+  .fab-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.25);
+    z-index: 999;
+    backdrop-filter: blur(2px);
+    animation: fadeIn 0.2s ease;
+  }
+
+  .fab-backdrop.show {
+    display: block;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* Push content up so FAB doesn't overlap bottom elements */
   .page-shell {
     padding-bottom: 100px;
   }
-  
-  /* Disable table animations on touch screens to bypass render lag */
+
+  /* Disable table hover animations on touch screens */
   .activity-table tbody tr:hover {
     background: transparent !important;
     transform: none !important;
@@ -660,9 +730,12 @@ textarea:focus {
     margin-bottom: 12px;
   }
 
-  /* Critical Fix: Setting minimum 16px font-size prevents iOS browsers from auto-zooming inputs layout */
-  input, 
-  select, 
+  /*
+    Critical Fix: Setting minimum 16px font-size prevents iOS browsers
+    from auto-zooming inputs on focus
+  */
+  input,
+  select,
   textarea {
     padding: 12px 14px;
     font-size: 16px;
@@ -671,11 +744,24 @@ textarea:focus {
   .filter-bar {
     gap: 8px;
   }
-  
+
   .filter-btn {
     padding: 8px 12px;
     font-size: 0.85rem;
     flex-grow: 1;
     text-align: center;
+  }
+
+  /* FAB slightly smaller on small phones */
+  .fab-main {
+    width: 52px;
+    height: 52px;
+    font-size: 20px;
+  }
+
+  .fab-item {
+    width: 42px;
+    height: 42px;
+    font-size: 16px;
   }
 }

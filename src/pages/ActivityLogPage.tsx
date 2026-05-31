@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { ActivityLog } from '../types';
 import { toast } from '../components/Toast';
+import { gsap } from 'gsap';
 
 const filters: Array<'ALL' | 'IN' | 'OUT' | 'EDIT'> = [
   'ALL',
@@ -15,15 +16,7 @@ function SkeletonRow() {
     <tr>
       {[1, 2, 3, 4, 5].map((item) => (
         <td key={item}>
-          <div
-            style={{
-              height: 16,
-              width: '100%',
-              borderRadius: 6,
-              background: '#e2e8f0',
-              animation: 'pulse 1.5s infinite',
-            }}
-          />
+          <div className="skeleton-bar" />
         </td>
       ))}
     </tr>
@@ -32,25 +25,11 @@ function SkeletonRow() {
 
 export default function ActivityLogPage() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
-
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'ALL' | 'IN' | 'OUT' | 'EDIT'>('ALL');
 
-  const [filter, setFilter] = useState<
-    'ALL' | 'IN' | 'OUT' | 'EDIT'
-  >('ALL');
-
-  const [editingLogId, setEditingLogId] =
-    useState<string | null>(null);
-
-  const [editAccountName, setEditAccountName] =
-    useState('');
-
-  const [editSi, setEditSi] = useState('');
-
-  const [editDr, setEditDr] = useState('');
-
-  const [savingEdit, setSavingEdit] =
-    useState(false);
+  const tableBodyRef = useRef<HTMLTableSectionElement | null>(null);
+  const hasAnimated = useRef(false);
 
   useEffect(() => {
     fetchLogs();
@@ -62,9 +41,7 @@ export default function ActivityLogPage() {
     const { data, error } = await supabase
       .from('activity_logs')
       .select('*')
-      .order('timestamp', {
-        ascending: false,
-      });
+      .order('timestamp', { ascending: false });
 
     if (error) {
       toast('Unable to load activity log');
@@ -79,33 +56,53 @@ export default function ActivityLogPage() {
   const visibleLogs =
     filter === 'ALL'
       ? logs
-      : logs.filter(
-          (entry) =>
-            entry.action_type === filter
-        );
+      : logs.filter((entry) => entry.action_type === filter);
+
+  /* ================= INTENTIONAL REVEAL ANIMATION ================= */
+  useEffect(() => {
+    if (loading) {
+      hasAnimated.current = false;
+      return;
+    }
+
+    if (!tableBodyRef.current) return;
+    if (hasAnimated.current) return;
+
+    const rows = tableBodyRef.current.querySelectorAll('tr');
+
+    // STEP 1: force EVERYTHING invisible (this is your “empty state” moment)
+    gsap.set(rows, {
+      opacity: 0,
+      y: 12,
+    });
+
+    // STEP 2: reveal animation
+    requestAnimationFrame(() => {
+      gsap.to(rows, {
+        opacity: 1,
+        y: 0,
+        duration: 0.4,
+        ease: 'power2.out',
+        stagger: 0.06,
+      });
+
+      hasAnimated.current = true;
+    });
+  }, [loading, filter]);
 
   return (
     <div className="page-shell">
-      <h1 className="page-title">
-        Activity Log
-      </h1>
+      <h1 className="page-title">Activity Log</h1>
 
       <div className="card">
-        <div
-          style={{
-            display: 'flex',
-            gap: 12,
-            flexWrap: 'wrap',
-            marginBottom: 18,
-          }}
-        >
+
+        {/* FILTERS */}
+        <div className="filter-bar">
           {filters.map((value) => (
             <button
               key={value}
-              className={`button ${
-                filter === value
-                  ? ''
-                  : 'secondary'
+              className={`filter-btn ${
+                filter === value ? 'active' : ''
               }`}
               onClick={() => setFilter(value)}
             >
@@ -114,8 +111,10 @@ export default function ActivityLogPage() {
           ))}
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table className="table">
+        {/* TABLE */}
+        <div className="table-scroll">
+          <table className="table activity-table">
+
             <thead>
               <tr>
                 <th>Action</th>
@@ -126,10 +125,9 @@ export default function ActivityLogPage() {
               </tr>
             </thead>
 
-            <tbody>
+            <tbody ref={tableBodyRef}>
               {loading ? (
                 <>
-                  <SkeletonRow />
                   <SkeletonRow />
                   <SkeletonRow />
                   <SkeletonRow />
@@ -138,108 +136,98 @@ export default function ActivityLogPage() {
               ) : visibleLogs.length > 0 ? (
                 visibleLogs.map((log) => (
                   <tr key={log.id}>
-                    <td>{log.action_type}</td>
 
-                    <td>{log.product_name}</td>
+                    <td>
+                      <span className={`action-badge ${log.action_type}`}>
+                        {log.action_type}
+                      </span>
+                    </td>
 
-                    <td>{log.serial_number}</td>
+                    <td className="strong-text">
+                      {log.product_name}
+                    </td>
 
-                    <td
-                      style={{
-                        maxWidth: 360,
-                        whiteSpace: 'normal',
-                      }}
-                    >
+                    <td className="muted-text">
+                      {log.serial_number}
+                    </td>
+
+                    <td className="details-cell">
                       {(() => {
-                        if (!log.details)
-                          return '';
+                        if (!log.details) return '—';
+
+                        let d: any;
 
                         try {
-                          const d = JSON.parse(
-                            log.details as string
-                          );
+                          d =
+                            typeof log.details === 'string'
+                              ? JSON.parse(log.details)
+                              : log.details;
+                        } catch {
+                          return String(log.details);
+                        }
 
-                          if (
-                            d.before &&
-                            d.after
-                          ) {
-                            const changes = [
-                              `Name: ${d.before.product_name} → ${d.after.product_name}`,
-                              `Serial: ${d.before.serial_number} → ${d.after.serial_number}`,
-                            ];
-
-                            if (
-                              d.before
-                                .delivery_date !==
-                              d.after
-                                .delivery_date
-                            ) {
-                              changes.push(
-                                `Delivery date: ${
-                                  d.before
-                                    .delivery_date ||
-                                  'N/A'
-                                } → ${
-                                  d.after
-                                    .delivery_date ||
-                                  'N/A'
-                                }`
-                              );
-                            }
-
-                            return changes.join(
-                              '; '
-                            );
-                          }
-
-                          if (
-                            d.delivery_date
-                          ) {
-                            return `Delivery date: ${d.delivery_date}`;
-                          }
-
-                          if (
-                            d.account_name ||
-                            d.si ||
-                            d.dr
-                          ) {
-                            return `Account: ${d.account_name}; SI: ${d.si}; DR: ${d.dr}`;
-                          }
-
-                          return String(
-                            log.details
-                          );
-                        } catch (e) {
-                          return String(
-                            log.details
+                        if (d.before && d.after) {
+                          return (
+                            <div>
+                              <div>
+                                <b>Name:</b>{' '}
+                                {d.before.product_name} → {d.after.product_name}
+                              </div>
+                              <div>
+                                <b>Serial:</b>{' '}
+                                {d.before.serial_number} → {d.after.serial_number}
+                              </div>
+                              {d.before.delivery_date !== d.after.delivery_date && (
+                                <div>
+                                  <b>Delivery:</b>{' '}
+                                  {d.before.delivery_date || 'N/A'} →{' '}
+                                  {d.after.delivery_date || 'N/A'}
+                                </div>
+                              )}
+                            </div>
                           );
                         }
+
+                        if (d.delivery_date) {
+                          return (
+                            <span>
+                              <b>Delivery:</b> {d.delivery_date}
+                            </span>
+                          );
+                        }
+
+                        if (d.account_name || d.si || d.dr) {
+                          return (
+                            <div>
+                              <div><b>Account:</b> {d.account_name || '-'}</div>
+                              <div><b>SI:</b> {d.si || '-'}</div>
+                              <div><b>DR:</b> {d.dr || '-'}</div>
+                            </div>
+                          );
+                        }
+
+                        return <span className="muted-text">No details</span>;
                       })()}
                     </td>
 
-                    <td>
-                      {new Date(
-                        log.timestamp
-                      ).toLocaleString()}
+                    <td className="muted-text">
+                      {new Date(log.timestamp).toLocaleString()}
                     </td>
+
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan={5}
-                    style={{
-                      padding: 20,
-                      color: '#64748b',
-                    }}
-                  >
-                    No log entries to show.
+                  <td colSpan={5} className="empty-state">
+                    No activity found for this filter.
                   </td>
                 </tr>
               )}
             </tbody>
+
           </table>
         </div>
+
       </div>
     </div>
   );
